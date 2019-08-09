@@ -6,6 +6,7 @@ jdk:
 cache:
   directories:
     - "$HOME/.m2"
+    - "$HOME/.cache/pip"
 before_install:
   - curl -O https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/deb/elasticsearch/2.4.0/elasticsearch-2.4.0.deb
     && sudo dpkg -i --force-confnew elasticsearch-2.4.0.deb && sudo service elasticsearch
@@ -17,27 +18,39 @@ before_install:
 before_script:
   - psql -c 'CREATE DATABASE kulu_backend_test;' -U postgres
   - psql -d kulu_backend_test -c 'CREATE extension "uuid-ossp";' -U postgres
-  # Sleep for 10 seconds to allow elasticsearch to boot up before tests.
   - sleep 10
 env:
-  global: PGPORT = 6666 DATABASE_URL = postgres://$USER:@localhost:$PGPORT/kulu_backend_test
+  global:
+    - PGPORT = 6666 DATABASE_URL = postgres://$USER:@localhost:$PGPORT/kulu_backend_test
 script: lein test
 branches:
   only:
-    - master
+    - ansible
 notifications:
   email:
     on_success: never
-    on_failure: always
+    on_failure: never
 services:
   - elasticsearch
 addons:
   postgresql: '9.6'
+  ssh_known_hosts: 165.22.213.15
+  apt:
+    packages:
+      - sshpass
+before_deploy:
+  - sudo pip install ansible
+  - openssl aes-256-cbc -K $encrypted_3c3c8465fa13_key -iv $encrypted_3c3c8465fa13_iv
+    -in deploy_key.enc -out $HOME/deploy_key -d
+  - chmod 600 $HOME/deploy_key
+  - eval `ssh-agent -s`
+  - ssh-add $HOME/deploy_key
+  - lein clean
+  - lein uberjar
+  - scp $HOME/build/nilenso/kulu-backend/target/kulu-backend-0.1.0-SNAPSHOT-standalone.jar $DEPLOY_USER@$DEPLOY_TARGET:~/
 deploy:
-  provider: heroku
-  run:
-    - "$DATABASE_URL lein clj-sql-up migrate"
-  api_key:
-    secure: uCm3CifmfpmK2N5ceQ0/smdFPspAIi0rKzbFa/1QbBHdepQ3k8nTvl0zcP7n2T0D4VcK6ivmaK4gkOfoUZ6JeX15s75RKfuG9ldvJUw8kxBueDqyDgQmu4PgD1jlgBTqN2SZv1CupKtNEVhc/c2PoOh+2IvMO/UUe1XVeF6tlwAtvoxwEqy9UWKyLuRmun5s9PFgYIm5INQAASr6pIzwBVyg4JZpcm82YSUBB11mmOPBIT1OLKINlBB0720j8x7ovfdhCxRFnhcu3dmag2mIASO7t6Dz3R6fiY8u5g39aKtz1mcQOXxEOkU2GH53WDqU9+Ia1W/BOzU76j+eVQD40DXOVoF4EAt2Ln9rBubKs8hcHqpQOTKT4+BrfbgIOizmWUBPzX06P4Tp5twWav0bMipRSrFR9VReZWdZYsKXsjLl/ErIHH2uvSlrsS6QTuQ3lY35D47mmX6VnUt8+Lm7WqnMrbmPW0S8S8GizrWxmBon1H1Ca6yQ+lF+fMYDsgYg43L75IdplCfCrLjJQsiLneBXJDg1yAtf9y+dNX1h201oaYmLHRMHp2FQzld1SEd8QDTbntqQkqFz9ALVPlSXcSj2K3Khwx/6n8yK+yAog0VdFARFqCKDS5OmBDk7Tze725qqMp4ojKdKaujvcK4HT6KVg6rJDsYPPvpFixvG+1M=
+  provider: script
+  script: ansible-playbook ansible/kulu.yml -i ansible/inventory/hosts -u $DEPLOY_USER
+    -e "ansible_sudo_pass=$ANSIBLE_SUDO_PASS" --private-key $HOME/deploy_key
   on:
-    branch: master
+    branch: ansible

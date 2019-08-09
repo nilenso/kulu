@@ -1,0 +1,9 @@
+- hosts: kuluserver
+  become: true
+  gather_facts: no
+
+  tasks:
+    - name: Install lein
+      become: true
+      command: wget https://raw.github.com/technomancy/leiningen/stable/bin/lein &&
+        chmod +x lein && mv lein /usr/local/bin/

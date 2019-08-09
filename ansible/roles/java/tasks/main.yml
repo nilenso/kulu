@@ -1,0 +1,8 @@
+- hosts: kuluserver
+  become: true
+  gather_facts: no
+
+  tasks:
+    - name: Install java
+      apt:
+        name: openjdk-8-jre-headless

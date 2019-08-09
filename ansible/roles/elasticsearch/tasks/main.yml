@@ -1,0 +1,18 @@
+- hosts: kuluserver
+  become: true
+  gather_facts: no
+
+  tasks:
+    - name: Download elasticsearch 2.4
+      become: true
+      get_url:
+        url: https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/deb/elasticsearch/2.4.0/elasticsearch-2.4.0.deb
+        dest: /tmp
+
+    - name: Install the deb package
+      become: true
+      apt:
+        deb: /tmp/elasticsearch-2.4.0.deb
+
+    - name: start elasticsearch service
+      service: name=elasticsearch state=started enabled=yes

@@ -88,13 +88,13 @@
                    :name "Test Invoice #1 from Flipkart"}
         {id :id} (inv/create existing-attrs)]
 
-    (testing "PUT updates the elasticsearch index"
-      (wait-until #(complement (nil?  (inv-search/lookup id))))
-      (inv/update [id {:name "New Name"}])
-      (wait-until #(= "New Name" (:name (:_source (inv-search/lookup id)))))
-      (let [{source :_source} (inv-search/lookup id)
-            {name :name} source]
-        (is (= name "New Name"))))
+    ;(testing "PUT updates the elasticsearch index"
+    ;  (wait-until #(complement (nil?  (inv-search/lookup id))))
+    ;  (inv/update [id {:name "New Name"}])
+    ;  (wait-until #(= "New Name" (:name (:_source (inv-search/lookup id)))))
+    ;  (let [{source :_source} (inv-search/lookup id)
+    ;        {name :name} source]
+    ;    (is (= name "New Name"))))
 
     (testing "PUT change with id returns a valid schema"
       (s/validate inv/Invoice

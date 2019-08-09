@@ -1,0 +1,31 @@
+- hosts: kuluserver
+  become: true
+  gather_facts: no
+
+  tasks:
+    - name: Install postgresql.
+      apt:
+        name: postgresql-9.6
+
+    - name: Install libpq-dev.
+      apt:
+        name: libpq-dev
+
+    - name: Install python-psycopg2.
+      apt:
+        name: python-psycopg2
+
+    - name: Create Kulu backend database
+      become: true
+      become_user: postgres
+      postgresql_db:
+        name: kulu_backend
+
+    - name: Create "uuid_ossp" extension
+      become: true
+      become_user: postgres
+      postgresql_ext:
+        name: uuid-ossp
+        db: kulu_backend
+      notify:
+        - start postgres

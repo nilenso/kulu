@@ -1,0 +1,16 @@
+- hosts: kuluserver
+  become: true
+  gather_facts: no
+
+  tasks:
+    - name: Copy service file
+      become: true
+      copy:
+        src: "kulu.service"
+        dest: /etc/systemd/system
+
+    - name: Start kulu service
+      systemd:
+        state: started
+        name: kulu
+        enabled: yes
